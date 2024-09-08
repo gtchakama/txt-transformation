@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Wordz
 
-## Getting Started
+This README provides an explanation of the main components and functionality in the project.
 
-First, run the development server:
+## Main Components
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. Home Component
+
+The `Home` component is the main container for the application. It sets up the overall layout and includes the `ProjectInfo` and `WordDisplay` components.
+
+```jsx
+const Home = () => (
+  <main className="flex min-h-screen w-full flex-col items-center justify-center bg-white p-4 md:p-8">
+    <div className="flex w-full max-w-md flex-col items-center justify-center space-y-8">
+      <ProjectInfo />
+      <WordDisplay />
+    </div>
+  </main>
+);
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. ProjectInfo Component
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+This component displays the project title.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```jsx
+const ProjectInfo = () => (
+  <div className="text-center">
+    <h1 className="mb-2 text-4xl font-bold text-green-700">Wordz</h1>
+    <p className="text-lg text-green-600">
+      A project by <a href='https://github.com/gtchakama' target='_blank' rel='noopener noreferrer' className='text-green-500 underline hover:text-green-600'>George Chakama</a>
+    </p>
+  </div>
+);
+```
 
-## Learn More
+### 3. WordDisplay Component
 
-To learn more about Next.js, take a look at the following resources:
+This is the core component that manages the state of the current word and renders the `AnimatedText` and `WordSelector` components.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```jsx
+const WordDisplay = () => {
+  const [text, setText] = useState(WORDS[0]);
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+  const characters = useMemo(() => {
+    return text.split('').map((char, index, array) => ({
+      id: `${char.toLowerCase()}${array.slice(0, index).filter(c => c.toLowerCase() === char.toLowerCase()).length + 1}`,
+      label: index === 0 ? char.toUpperCase() : char.toLowerCase()
+    }));
+  }, [text]);
 
-## Deploy on Vercel
+  const handleWordChange = useCallback((word) => {
+    setText(word);
+  }, []);
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+  return (
+    <div className="flex w-full flex-col items-center justify-center space-y-6">
+      <AnimatedText characters={characters} />
+      <WordSelector onSelectWord={handleWordChange} currentWord={text} />
+    </div>
+  );
+};
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+### 4. AnimatedText Component
+
+This component is responsible for rendering the animated text using Framer Motion.
+
+```jsx
+const AnimatedText = React.memo(({ characters }) => (
+  <p className="flex h-44 w-full items-center justify-center rounded-3xl bg-green-100 p-8 text-4xl font-medium text-green-800 shadow-lg">
+    <AnimatePresence mode="popLayout">
+      {characters.map(({ id, label }) => (
+        <motion.span
+          key={id}
+          layoutId={id}
+          layout="position"
+          className="inline-block"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ type: "spring", bounce: 0.1, duration: 0.3 }}
+        >
+          {label}
+        </motion.span>
+      ))}
+    </AnimatePresence>
+  </p>
+));
+```
+
+### 5. WordSelector and WordButton Components
+
+These components create the interactive buttons for selecting words.
+
+```jsx
+const WordSelector = React.memo(({ onSelectWord, currentWord }) => (
+  <div className="flex w-full flex-wrap items-center justify-center">
+    {WORDS.map((word) => (
+      <WordButton
+        key={word}
+        word={word}
+        isActive={word === currentWord}
+        onClick={() => onSelectWord(word)}
+      />
+    ))}
+  </div>
+));
+
+const WordButton = React.memo(({ word, isActive, onClick }) => (
+  <motion.button
+    whileHover={{ scale: 1.05, backgroundColor: "rgb(220, 252, 231)" }}
+    whileTap={{ scale: 0.95 }}
+    transition={{ type: "spring", bounce: 0.1, duration: 0.4 }}
+    className={`m-1 rounded-full px-4 py-2 text-sm font-medium shadow-md ${
+      isActive ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700'
+    }`}
+    onClick={onClick}
+  >
+    {word}
+  </motion.button>
+));
+```
+
+## Key Functionalities
+
+1. **Word State Management**: The current word is managed using React's `useState` hook in the `WordDisplay` component.
+
+2. **Character Generation**: The `useMemo` hook in `WordDisplay` generates an array of character objects, each with a unique ID and label.
+
+3. **Word Selection**: The `handleWordChange` function updates the current word when a new word is selected.
+
+4. **Animation**: Framer Motion is used to animate the appearance, disappearance, and repositioning of characters in the `AnimatedText` component.
+
+5. **Performance Optimization**: `React.memo` is used to optimize performance by preventing unnecessary re-renders of components.
+
+6. **Interactive UI**: The `WordButton` component uses Framer Motion for hover and tap animations, providing visual feedback to user interactions.
